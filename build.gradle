@@ -1,0 +1,29 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url = "https://files.minecraftforge.net/maven" }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+    }
+}
+
+allprojects {
+    apply plugin: 'java'
+    group = "com.hypixel"
+    version = "1.0"
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+// Apply ForgeGradle only to subprojects
+subprojects {
+    apply plugin: 'net.minecraftforge.gradle.forge'
+
+    minecraft {
+        version = "1.8.9-11.15.1.2318-1.8.9"
+        mappings = "stable_22"
+    }
+}

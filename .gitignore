@@ -1,0 +1,29 @@
+# Ignore Gradle build & cache
+.gradle/
+build/
+bin/
+**/build/
+**/.gradle/
+
+# Ignore run directories (local dev Minecraft)
+run/
+farming/run-farming/
+mining/
+
+# IDE/editor stuff
+.vscode/
+eclipse/
+.idea/
+*.iml
+*.classpath
+*.project
+*.settings/
+
+# Logs & crash reports
+*.log
+*.log.gz
+crash-reports/
+
+# OS junk
+.DS_Store
+Thumbs.db
