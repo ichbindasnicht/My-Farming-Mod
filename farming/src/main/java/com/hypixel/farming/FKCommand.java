@@ -3,99 +3,123 @@ package com.hypixel.farming;
 import net.minecraft.client.Minecraft;
 import net.minecraft.command.ICommand;
 import net.minecraft.command.ICommandSender;
-import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraft.util.BlockPos;
-
 import net.minecraft.util.ChatComponentText;
-
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FKCommand implements ICommand {
-    private static Map<String, Integer> keyNameToCode = new HashMap<String, Integer>();
-    private static Map<Integer, String> keyCodeToName = new HashMap<Integer, String>();
-    String[] names = {"MOUSE0", "SPACE"};
-    int[] codes = {-100, Keyboard.KEY_SPACE};
+    private static final Map<String, Integer> keyNameToCode = new HashMap<String, Integer>();
+    private static final Map<Integer, String> keyCodeToName = new HashMap<Integer, String>();
 
-    public FKCommand(){
-        for (int i = 0; i < codes.length; i++){
-            keyCodeToName.put(codes[i], names[i]);
-            keyNameToCode.put(names[i], codes[i]);
+    public FKCommand() {
+        // Mouse buttons first
+        for (int i = 0; i < Mouse.getButtonCount(); i++) {
+            String name = "MOUSE" + i;
+            keyCodeToName.put(-100 - i, name);
+            keyNameToCode.put(name, -100 - i);
+        }
+
+        // Keyboard keys
+        for (int i = 0; i < Keyboard.KEYBOARD_SIZE; i++) {
+            String name = Keyboard.getKeyName(i);
+            if (name != null && !name.isEmpty()) {
+                name = name.toUpperCase();
+                keyCodeToName.put(i, name);
+                keyNameToCode.put(name, i);
+            }
         }
     }
 
     @Override
-    public String getCommandName(){
+    public String getCommandName() {
         return "farmingkeys";
     }
 
     @Override
-    public String getCommandUsage(ICommandSender sender){
+    public String getCommandUsage(ICommandSender sender) {
         return "/farmingkeys <get|set> <action:(attack|jump)> <key_name>";
     }
 
     @Override
-    public void processCommand(ICommandSender sender, String[] args){
-        if (args.length < 2){
+    public void processCommand(ICommandSender sender, String[] args) {
+        if (args.length < 3) {
             sender.addChatMessage(new ChatComponentText("Usage: " + getCommandUsage(sender)));
             return;
         }
 
-        String setOrGet = args[0];
+        String setOrGet = args[0].toLowerCase();
         String action = args[1].toLowerCase();
         String keyName = args[2].toUpperCase();
-        int keyCode = keyNameToKeyCode(keyName);
-        if (keyCode == Keyboard.KEY_NONE){
+
+        Integer keyCode = keyNameToCode.get(keyName);
+        if (keyCode == null) {
             sender.addChatMessage(new ChatComponentText("Unknown Key: " + keyName));
             return;
         }
-        ModConfig.save();
-        // TODO Add getter
+
+        // Save the config after setting the keybind
         Main.fk.setFarmKey(action, keyCode);
+        ModConfig.save();
+        sender.addChatMessage(new ChatComponentText("Set " + action + " key to " + keyName));
     }
 
     @Override
-    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos blockPos){
-        List<String> list = new ArrayList<String>();
-        if (args.length == 1){
-            list.add("set");
-            list.add("get");
+    public List<String> addTabCompletionOptions(ICommandSender sender, String[] args, BlockPos blockPos) {
+        List<String> completions = new ArrayList();
+
+        if (args.length == 1) {
+            completions.add("set");
+            completions.add("get");
+        } else if (args.length == 2) {
+            completions.add("attack");
+            completions.add("jump");
+        } else if (args.length == 3) {
+            completions.addAll(keyNameToCode.keySet());
         }
-        else if (args.length == 2) {
-            list.add("attack");
-            list.add("jump");
-        } 
-        else if (args.length == 3){
-            for (String name : names){
-                list.add(name);
+
+        // Filter completions manually (no lambda)
+        String current = args[args.length - 1].toUpperCase();
+        List<String> filtered = new ArrayList<String>();
+        for (String s : completions) {
+            if (s.toUpperCase().startsWith(current)) {
+                filtered.add(s);
             }
         }
-        return list;
+
+        return filtered;
     }
 
-
     @Override
-    public boolean canCommandSenderUseCommand(ICommandSender sender) {return true;}
-
-    @Override
-    public List<String> getCommandAliases() {return new ArrayList();}
-
-    @Override
-    public boolean isUsernameIndex(String[] args, int index) {return false;}
-
-    public int keyNameToKeyCode(String keyName){
-        return keyNameToCode.get(keyName);
+    public boolean canCommandSenderUseCommand(ICommandSender sender) {
+        return true;
     }
 
-    public String keyCodeToName(int keyCode){
-        return keyCodeToName.get(keyCode);
+    @Override
+    public List<String> getCommandAliases() {
+        return new ArrayList();
     }
 
-    // what
+    @Override
+    public boolean isUsernameIndex(String[] args, int index) {
+        return false;
+    }
+
+    public int keyNameToKeyCode(String keyName) {
+        Integer code = keyNameToCode.get(keyName.toUpperCase());
+        return code == null ? Keyboard.KEY_NONE : code;
+    }
+
+    public String keyCodeToName(int keyCode) {
+        return keyCodeToName.getOrDefault(keyCode, "UNKNOWN");
+    }
+
     @Override
     public int compareTo(ICommand o) {
         return this.getCommandName().compareTo(o.getCommandName());

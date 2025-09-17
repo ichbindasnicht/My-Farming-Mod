@@ -1,14 +1,13 @@
 [
 {
-  "modid": "examplemod",
-  "name": "Example Mod",
-  "description": "Example placeholder mod.",
+  "modid": "farming-mod",
+  "name": "My Farming Mod",
+  "description": "A lightweight mod that implements some features useful for farming",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "url": "",
+  "url": "https://github.com/ichbindasnicht/My-Farming-Mod",
   "updateUrl": "",
-  "authorList": ["ExampleDude"],
-  "credits": "The Forge and FML guys, for making this example",
+  "authorList": ["ichbindas_nicht"],
   "logoFile": "",
   "screenshots": [],
   "dependencies": []
