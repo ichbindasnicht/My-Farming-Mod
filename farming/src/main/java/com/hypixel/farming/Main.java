@@ -21,12 +21,10 @@ import java.io.File;
 @Mod(modid = Main.MODID, version = Main.VERSION)
 public class Main {
     public static final String MODID = "My Farming Mod";
-    public static final String VERSION = "1.1";
+    public static final String VERSION = "1.2";
 
     public static KeyBinding snapToNearest15DegreesKey;
     public static KeyBinding toggleFarmingKeys;
-
-    public static int farmJump, farmAttack;
 
     public static boolean isFarming = false;
     public static FrozenMouseHelper frozenMouseHelper;

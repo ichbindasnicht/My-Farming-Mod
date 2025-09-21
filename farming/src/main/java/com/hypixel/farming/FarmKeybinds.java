@@ -4,22 +4,43 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import org.lwjgl.input.Keyboard;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.minecraft.util.ChatComponentText;
 
 public class FarmKeybinds {
+    public static final int KEY_UNBOUND = -200;  // Not KEY_NONE but a fake key that tells the mod to not overwrite a certain value
     public static Minecraft mc = Minecraft.getMinecraft();
 
     public static FarmKeybinds instance;
 
     //public KeyBinding farmAttack, farmJump;
     public int originalAttack, originalJump;
-
+    public static Map<String, KeyBinding> actions = new HashMap<String, KeyBinding>();
+    public static Map<String, Integer> originalActions = new HashMap<String, Integer>();
+    public static Map<String, Integer> farmActions = new HashMap<String, Integer>();
     public boolean saved = false;
 
     public FarmKeybinds(){
         instance = this;
 
+        initializeActions();
+        addShutdownHook();
+    }
+
+    public static FarmKeybinds getInstance(){
+        return instance;
+    }
+
+    public void initializeActions(){
+        for (KeyBinding kb : mc.gameSettings.keyBindings){
+            String cleanName = kb.getKeyDescription().replace("key.", "");
+            actions.put(cleanName, kb);
+        }
+    }
+
+    public void addShutdownHook(){
         // Hook to restore Keybinds on exit
         Runtime.getRuntime().addShutdownHook(
             new Thread(
@@ -31,66 +52,94 @@ public class FarmKeybinds {
                 }
             )
         );
-        //Main.farmAttack = new KeyBinding("key.farm_attack", Keyboard.KEY_SPACE, "key.categories.farming");
-        //Main.farmJump = new KeyBinding("key.farm_jump", -100, "key.categories.farming"); // Mb 0 (mb1 is -101 etc)
-        Main.farmAttack = Keyboard.KEY_SPACE;
-        Main.farmJump = -100; // Mb 0 (mb1 is -101 etc)   
     }
 
-    public static FarmKeybinds getInstance(){
-        return instance;
-    }
-
-    public void setFarmKey(String action, int key){
+    public void setFarmKey(String action, int keyCode){
         // 1. decipher action
-        // 2. bind key to action and  TODO msg the player
+        // 2. bind key to action and  TODO msg the player via chat
 
-        if (action.equals("attack")){
-            System.out.println("Set Farming Attack Keybind to Key: " + key);
-            Main.farmAttack = key;
-            System.out.println("Keybind is now: " + Main.farmAttack);
-            //mc.thePlayer.addChatMessage(new ChatComponentText("Set Farming Attack Keybind to Key: " + keyName));
-        } else if (action.equals("jump")){
-            System.out.println("Set Farming Jump Keybind to Key: " + key);
-            Main.farmJump = key;
-            System.out.println("Keybind is now: " + Main.farmJump);
-            //mc.thePlayer.addChatMessage(new ChatComponentText("Set Farming Jump Keybind to Key: " + keyName));
-        } else {
-            System.out.println("Unknown Action: " + action);
-            //mc.thePlayer.addChatMessage(new ChatComponentText("Unknown Action: " + action));
+        if (actions.containsKey(action)){
+            System.out.println("Set Farming "+action.toUpperCase()+" Keybind to " + keyCode);
+            farmActions.put(action, keyCode);
         }
- 
-        ModConfig.save();
-        return;
+        else {
+            System.out.println("Unknown action: " + action);
+        }
     }
 
-    public String getFarmKey(String action){
-        // TODO setFarmKey method
-        return "";
+    public void resetFarmKey(String action){
+        if (actions.containsKey(action)){
+            System.out.println("Removed Farming Key for "+action.toUpperCase());
+            farmActions.put(action, KEY_UNBOUND);
+        }
+        else {
+            System.out.println("Unknown action: " + action);
+        }
+    }
+
+    public int getFarmKey(String action){
+        if (farmActions.containsKey(action))
+            return farmActions.get(action);
+        return KEY_UNBOUND;
+    }
+    public void printFarmKeys(){
+        // TODO list all farm keys in pprint
     }
 
     public void saveOriginals(){
         if (!saved){
-            originalAttack = mc.gameSettings.keyBindAttack.getKeyCode();
-            originalJump = mc.gameSettings.keyBindJump.getKeyCode();
+            for (String actionName : actions.keySet()) {
+                originalActions.put(actionName, actions.get(actionName).getKeyCode());
+            }
+
             saved = true;
         }
+    }
+
+    public void saveFarmKeys(){
+        // only save as a new farmingkey if:
+        // - the key to save is not the same as the original key, if it is leave it as unchanged
+        if (Main.isFarming)
+        for (String actionName : actions.keySet()) {
+            if (originalActions.containsKey(actionName)){
+                if (originalActions.get(actionName) == actions.get(actionName).getKeyCode()){
+                    farmActions.put(actionName, KEY_UNBOUND);
+                } else {
+                    farmActions.put(actionName, actions.get(actionName).getKeyCode());
+                }
+            }
+        }
+
+        ModConfig.save();
     }
 
     public void applyFarmingKeys(){
         saveOriginals();
         if (saved){
-            mc.gameSettings.keyBindAttack.setKeyCode(Main.farmAttack);//.getKeyCode());
-            mc.gameSettings.keyBindJump.setKeyCode(Main.farmJump);//.getKeyCode());
+            for (String actionName : actions.keySet()){
+                if (farmActions.containsKey(actionName)){
+                if (farmActions.get(actionName) != KEY_UNBOUND){
+
+                    actions.get(actionName).setKeyCode(farmActions.get(actionName));
+                }
+                }
+            }
             mc.gameSettings.saveOptions();
         }
     }
 
+    // and save farming keys
     public void restoreOriginals(){
+        saveFarmKeys();
         if (saved){
-            ModConfig.save();
-            mc.gameSettings.keyBindAttack.setKeyCode(originalAttack);
-            mc.gameSettings.keyBindJump.setKeyCode(originalJump);
+
+            for (String actionName : actions.keySet()){
+                if (originalActions.containsKey(actionName))
+                    actions.get(actionName).setKeyCode(originalActions.get(actionName));
+            }
+
+            //mc.gameSettings.keyBindAttack.setKeyCode(originalAttack);
+            //mc.gameSettings.keyBindJump.setKeyCode(originalJump);
             saved = false;
             mc.gameSettings.saveOptions();
         }

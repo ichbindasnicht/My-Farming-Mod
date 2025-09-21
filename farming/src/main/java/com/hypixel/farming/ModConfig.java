@@ -17,35 +17,19 @@ public class ModConfig {
     public static void load(){
         config.load();
 
-        // Jump
-        int jumpKey = config.getInt("jumpKey", "keys", Keyboard.KEY_NONE, -100, 300, "The Farming Key for jumping");
-        System.out.println("JumpKey: "+jumpKey);
-        // replaced FarmKeybinds.getInstance() by Main.fk
-        
-        // Attack
-        int attackKey = config.getInt("attackKey", "keys", Keyboard.KEY_NONE, -100, 300, "The Farming Key for attacking");
-        System.out.println("AttackKey: "+jumpKey);
-        
-        // Save them now
-        Main.fk.setFarmKey("jump", jumpKey);
-        Main.fk.setFarmKey("attack", attackKey);
+        for (String actionName : FarmKeybinds.actions.keySet()){
+            int keyCode = config.getInt(actionName, "keys", Main.fk.KEY_UNBOUND, -200, 300, "Farming Key for " + actionName);
+            Main.fk.setFarmKey(actionName, keyCode);
+        }
         loaded = true;
     }
 
     public static void save(){
-            /*  Stack Trace Print
-            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-            System.out.println("current call stack");
-            for (StackTraceElement element : stack){
-                System.out.println("\tat "+element);
+        if (config != null){
+
+            for (String actionName : FarmKeybinds.actions.keySet()) {
+                config.getCategory("keys").get(actionName).set(Main.fk.farmActions.get(actionName));
             }
-            */
-            if (config != null){
-            // TODO How tf do you save
-            //config.get("keys", "attackKey", "The Farming Key for attacking").set(Main.farmAttack);
-            config.getCategory("keys").get("attackKey").set(Main.farmAttack);
-            //config.get("keys", "jumpKey", "The Farming Key for jumping").set(Main.farmJump);
-            config.getCategory("keys").get("jumpKey").set(Main.farmJump);
 
             config.save();
         }

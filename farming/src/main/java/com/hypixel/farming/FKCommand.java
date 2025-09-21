@@ -44,7 +44,7 @@ public class FKCommand implements ICommand {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/farmingkeys <get|set> <action:(attack|jump)> <key_name>";
+        return "/farmingkeys <get|set|reset> <action> <key_name>";
     }
 
     @Override
@@ -58,16 +58,37 @@ public class FKCommand implements ICommand {
         String action = args[1].toLowerCase();
         String keyName = args[2].toUpperCase();
 
-        Integer keyCode = keyNameToCode.get(keyName);
-        if (keyCode == null) {
-            sender.addChatMessage(new ChatComponentText("Unknown Key: " + keyName));
-            return;
+        if (setOrGet == "set" || setOrGet == "reset"){         
+            if (setOrGet == "reset"){
+                Main.fk.resetFarmKey(action);
+                return;
+            }
+            
+            // set the Keybind
+            Integer keyCode = keyNameToCode.get(keyName);
+
+            // if it is not a valid keybind
+            if (keyCode == null) {
+                sender.addChatMessage(new ChatComponentText("Unknown Key: " + keyName));
+                return;
+            }
+            // Save the config after setting the keybind
+            Main.fk.setFarmKey(action, keyCode);
+            sender.addChatMessage(new ChatComponentText("Set " + action + " key to " + keyName));
+        }
+        else if (setOrGet == "get"){
+            if (Main.fk.actions.containsKey(action)) {   // If the key exists at all, get the Binding, even if bound to None
+                if (Main.fk.getFarmKey(action) == Main.fk.KEY_UNBOUND)
+                    sender.addChatMessage(new ChatComponentText("Farming " + action.toUpperCase() + " is not bound"));
+                else
+                    sender.addChatMessage(new ChatComponentText("Farming " + action.toUpperCase() + " is set to " + keyCodeToName(Main.fk.getFarmKey(action))));
+            }
+            else
+                sender.addChatMessage(new ChatComponentText("Unknown Key: " + keyName));
         }
 
-        // Save the config after setting the keybind
-        Main.fk.setFarmKey(action, keyCode);
-        ModConfig.save();
-        sender.addChatMessage(new ChatComponentText("Set " + action + " key to " + keyName));
+        
+
     }
 
     @Override
@@ -77,9 +98,9 @@ public class FKCommand implements ICommand {
         if (args.length == 1) {
             completions.add("set");
             completions.add("get");
+            completions.add("reset");
         } else if (args.length == 2) {
-            completions.add("attack");
-            completions.add("jump");
+            completions.addAll(FarmKeybinds.actions.keySet());
         } else if (args.length == 3) {
             completions.addAll(keyNameToCode.keySet());
         }
